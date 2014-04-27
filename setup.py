@@ -20,7 +20,7 @@ setup(
     author_email='',
     packages=find_packages(exclude="test"),
     test_suite='nose.collector',
-    install_requires=['zmq'],
+    install_requires=['pyzmq'],
     tests_require=['nose', 'coverage'],
     entry_points={
         'console_scripts': [
