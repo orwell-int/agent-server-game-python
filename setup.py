@@ -21,7 +21,7 @@ setup(
     packages=find_packages(exclude="test"),
     test_suite='nose.collector',
     install_requires=['pyzmq'],
-    tests_require=['nose', 'coverage'],
+    tests_require=['nose', 'coverage', 'mock'],
     entry_points={
         'console_scripts': [
             'thought_police = orwell.agent.main:main',

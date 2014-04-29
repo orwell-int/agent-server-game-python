@@ -85,7 +85,7 @@ class Start(SingleCommand):
         parser.add_argument(
             'object',
             nargs=1,
-            choices=('game'))
+            choices=('game',))
         return parser
 
 
@@ -151,7 +151,9 @@ class AgentApp(App):
         self.log.debug('initialize_app')
         import zmq
         self._zmq_context = zmq.Context()
+        self.log.debug('created context = %s' % self._zmq_context)
         self._zmq_socket = self._zmq_context.socket(zmq.PUB)
+        self.log.debug('created socket = %s' % self._zmq_socket)
         self._zmq_socket.setsockopt(zmq.LINGER, 1)
         self._zmq_socket.connect("tcp://%s:%i" % (
             self.options.address,
@@ -161,6 +163,7 @@ class AgentApp(App):
 
     def send(self, command):
         self.log.debug('send command "%s"' % command)
+        self.log.debug('call socket.send("%s")' % command)
         self._zmq_socket.send(command)
 
     def prepare_to_run_command(self, cmd):
