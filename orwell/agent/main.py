@@ -1,5 +1,6 @@
 import logging
 import sys
+import socket
 
 from cliff.app import App
 from cliff.command import Command
@@ -18,6 +19,37 @@ class RegisteredCommand(Command):
 class SingleCommand(RegisteredCommand):
     def take_action(self, parsed_args):
         self.app.send(self._command_name + ' ' + parsed_args.object[0])
+
+
+class List(SingleCommand):
+    "List something."
+
+    log = logging.getLogger(__name__)
+    port = None
+    host = socket.gethostbyname(socket.getfqdn())
+
+    def take_action(self, parsed_args):
+        self.app.send(
+            ' '.join((
+                self._command_name,
+                List.host,
+                List.port)))
+        message = self.app.receive()
+        self.log.info(message)
+
+
+class ListPlayer(List):
+    "List all players."
+
+    log = logging.getLogger(__name__)
+    _command_name = 'list player'
+
+
+class ListRobot(List):
+    "List all robots."
+
+    log = logging.getLogger(__name__)
+    _command_name = 'list robot'
 
 
 class Add(SingleCommand):
@@ -117,12 +149,15 @@ class AgentApp(App):
             )
         Start.register_to(command)
         Stop.register_to(command)
+        ListPlayer.register_to(command)
+        ListRobot.register_to(command)
         AddPlayer.register_to(command)
         AddRobot.register_to(command)
         RemovePlayer.register_to(command)
         RemoveRobot.register_to(command)
         self._zmq_context = None
-        self._zmq_socket = None
+        self._zmq_publish_socket = None
+        self._zmq_pull_socket = None
 
     def build_option_parser(
             self,
@@ -145,6 +180,12 @@ class AgentApp(App):
             type=str,
             default='127.0.0.1',
             help='The address to send commands to.')
+        parser.add_argument(
+            '-l',
+            '--listen',
+            type=int,
+            default=9004,
+            help='The port to listen to for replies.')
         return parser
 
     def initialize_app(self, argv):
@@ -152,19 +193,31 @@ class AgentApp(App):
         import zmq
         self._zmq_context = zmq.Context()
         self.log.debug('created context = %s' % self._zmq_context)
-        self._zmq_socket = self._zmq_context.socket(zmq.PUB)
-        self.log.debug('created socket = %s' % self._zmq_socket)
-        self._zmq_socket.setsockopt(zmq.LINGER, 1)
-        self._zmq_socket.connect("tcp://%s:%i" % (
+        self._zmq_publish_socket = self._zmq_context.socket(zmq.PUB)
+        self.log.debug(
+            'created publish socket = %s' % self._zmq_publish_socket)
+        self._zmq_publish_socket.setsockopt(zmq.LINGER, 1)
+        self._zmq_publish_socket.connect("tcp://%s:%i" % (
             self.options.address,
             self.options.port))
+        self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
+        self.log.debug('created pull socket = %s' % self._zmq_pull_socket)
+        self._zmq_pull_socket.setsockopt(zmq.LINGER, 1)
+        self._zmq_pull_socket.bind("tcp://0.0.0.0:%i" % self.options.listen)
+        List.port = str(self.options.listen)
         import time
         time.sleep(0.001)
 
     def send(self, command):
         self.log.debug('send command "%s"' % command)
         self.log.debug('call socket.send("%s")' % command)
-        self._zmq_socket.send(command)
+        self._zmq_publish_socket.send(command)
+
+    def receive(self):
+        self.log.debug('try to receive a message')
+        message = self._zmq_pull_socket.recv()
+        self.log.debug('received: %s', message)
+        return message
 
     def prepare_to_run_command(self, cmd):
         self.log.debug('prepare_to_run_command %s', cmd.__class__.__name__)
