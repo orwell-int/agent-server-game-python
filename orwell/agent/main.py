@@ -150,6 +150,20 @@ class RegisterRobot(SingleCommand):
         return parser
 
 
+class UnregisterRobot(SingleCommand):
+    "Unregister a robot"
+
+    log = logging.getLogger(__name__)
+    _command_name = 'unregister robot'
+
+    def get_parser(self, prog_name):
+        parser = super(UnregisterRobot, self).get_parser(prog_name)
+        parser.add_argument(
+            'object',
+            nargs=1)
+        return parser
+
+
 class AgentApp(App):
 
     log = logging.getLogger(__name__)
@@ -170,6 +184,7 @@ class AgentApp(App):
         RemovePlayer.register_to(command)
         RemoveRobot.register_to(command)
         RegisterRobot.register_to(command)
+        UnregisterRobot.register_to(command)
         self._zmq_context = None
         self._zmq_publish_socket = None
         self._zmq_pull_socket = None
