@@ -129,7 +129,24 @@ class MainTest(unittest.TestCase):
         assert_equal(
             list(zmq_socket.mock_calls)[-1],
             mock.call().socket().send("unregister robot Robert"))
+        thougt_police.main(["set", "robot", "Robert", "video_port", "3"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("set robot Robert video_port 3"))
+        thougt_police.main(
+            ["set", "robot", "Robert", "video_address", "wrong"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("set robot Robert video_address wrong"))
         thougt_police.main(["remove", "robot", "Robert"])
         assert_equal(
             list(zmq_socket.mock_calls)[-1],
             mock.call().socket().send("remove robot Robert"))
+
+    @mock.patch('zmq.Context', autospec=True)
+    @mock.patch('zmq.Socket', autospec=True)
+    def test_7(self, zmq_context, zmq_socket):
+        assert_raises(
+            SystemExit,
+            thougt_police.main,
+            ["set", "robot", "Louis", "number", "XIV"])

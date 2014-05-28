@@ -21,6 +21,40 @@ class SingleCommand(RegisteredCommand):
         self.app.send(self._command_name + ' ' + parsed_args.object[0])
 
 
+class Set(SingleCommand):
+    "Set the property of an object."
+
+    log = logging.getLogger(__name__)
+
+    def get_parser(self, prog_name):
+        parser = super(Set, self).get_parser(prog_name)
+        parser.add_argument(
+            'name')
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        parser.add_argument(
+            'value')
+        return parser
+
+    def take_action(self, parsed_args):
+        self.app.send(
+            ' '.join((
+                self._command_name,
+                parsed_args.name,
+                parsed_args.property,
+                parsed_args.value)))
+
+
+class SetRobot(Set):
+    "Set the property of a robot."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'set robot'
+    _properties = ['video_port', 'video_address']
+
+
 class List(SingleCommand):
     "List something."
 
@@ -185,6 +219,7 @@ class AgentApp(App):
         RemoveRobot.register_to(command)
         RegisterRobot.register_to(command)
         UnregisterRobot.register_to(command)
+        SetRobot.register_to(command)
         self._zmq_context = None
         self._zmq_publish_socket = None
         self._zmq_pull_socket = None
