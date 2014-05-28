@@ -136,6 +136,20 @@ class Stop(SingleCommand):
         return parser
 
 
+class RegisterRobot(SingleCommand):
+    "Register a robot"
+
+    log = logging.getLogger(__name__)
+    _command_name = 'register robot'
+
+    def get_parser(self, prog_name):
+        parser = super(RegisterRobot, self).get_parser(prog_name)
+        parser.add_argument(
+            'object',
+            nargs=1)
+        return parser
+
+
 class AgentApp(App):
 
     log = logging.getLogger(__name__)
@@ -155,6 +169,7 @@ class AgentApp(App):
         AddRobot.register_to(command)
         RemovePlayer.register_to(command)
         RemoveRobot.register_to(command)
+        RegisterRobot.register_to(command)
         self._zmq_context = None
         self._zmq_publish_socket = None
         self._zmq_pull_socket = None
@@ -189,7 +204,7 @@ class AgentApp(App):
         return parser
 
     def initialize_app(self, argv):
-        self.log.debug('initialize_app')
+        self.log.debug('initialize_app ; argv = ' + str(argv))
         import zmq
         self._zmq_context = zmq.Context()
         self.log.debug('created context = %s' % self._zmq_context)
@@ -205,8 +220,9 @@ class AgentApp(App):
         self._zmq_pull_socket.setsockopt(zmq.LINGER, 1)
         self._zmq_pull_socket.bind("tcp://0.0.0.0:%i" % self.options.listen)
         List.port = str(self.options.listen)
+        # if we do not wait the first messages are lost
         import time
-        time.sleep(0.001)
+        time.sleep(0.6)
 
     def send(self, command):
         self.log.debug('send command "%s"' % command)
