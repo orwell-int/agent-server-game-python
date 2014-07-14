@@ -52,7 +52,7 @@ class SetRobot(Set):
     log = logging.getLogger(__name__)
 
     _command_name = 'set robot'
-    _properties = ['video_port', 'video_address']
+    _properties = ['video_url', ]
 
 
 class List(SingleCommand):
