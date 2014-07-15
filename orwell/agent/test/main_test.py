@@ -77,26 +77,6 @@ class MainTest(unittest.TestCase):
     @mock.patch('zmq.Context', autospec=True)
     @mock.patch('zmq.Socket', autospec=True)
     def test_5(self, zmq_context, zmq_socket):
-        thougt_police.main(["add", "player", "toto"])
-        assert_equal(
-            list(zmq_socket.mock_calls)[-1],
-            mock.call().socket().send("add player toto"))
-        thougt_police.main(["remove", "player", "toto"])
-        assert_equal(
-            list(zmq_socket.mock_calls)[-1],
-            mock.call().socket().send("remove player toto"))
-        thougt_police.main(["add", "robot", "Robert"])
-        assert_equal(
-            list(zmq_socket.mock_calls)[-1],
-            mock.call().socket().send("add robot Robert"))
-        thougt_police.main(["remove", "robot", "Robert"])
-        assert_equal(
-            list(zmq_socket.mock_calls)[-1],
-            mock.call().socket().send("remove robot Robert"))
-
-    @mock.patch('zmq.Context', autospec=True)
-    @mock.patch('zmq.Socket', autospec=True)
-    def test_6(self, zmq_context, zmq_socket):
         '''
         There is something wrong with this test as some extra calls to
         call().socket().recv().__str__() are added (it seems to be a side
@@ -109,19 +89,60 @@ class MainTest(unittest.TestCase):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(found)
         assert_equal(
-            list(zmq_socket.mock_calls)[-14],
+            list(zmq_socket.mock_calls)[-10],
             mock.call().socket().send("list robot {} 9004".format(
                 address)))
         assert_equal(
-            list(zmq_socket.mock_calls)[-13],
+            list(zmq_socket.mock_calls)[-9],
             mock.call().socket().recv())
         thougt_police.main(["list", "player"])
         found = list(zmq_socket.mock_calls)
         pp.pprint(found)
         assert_equal(
-            list(zmq_socket.mock_calls)[-15],
+            list(zmq_socket.mock_calls)[-11],
             mock.call().socket().send("list player {} 9004".format(
                 address)))
         assert_equal(
-            list(zmq_socket.mock_calls)[-14],
+            list(zmq_socket.mock_calls)[-10],
             mock.call().socket().recv())
+
+    @mock.patch('zmq.Context', autospec=True)
+    @mock.patch('zmq.Socket', autospec=True)
+    def test_6(self, zmq_context, zmq_socket):
+        thougt_police.main(["add", "player", "toto"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("add player toto"))
+        thougt_police.main(["remove", "player", "toto"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("remove player toto"))
+        thougt_police.main(["add", "robot", "Robert"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("add robot Robert"))
+        thougt_police.main(["register", "robot", "Robert"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("register robot Robert"))
+        thougt_police.main(["unregister", "robot", "Robert"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("unregister robot Robert"))
+        thougt_police.main(
+            ["set", "robot", "Robert", "video_url", "wrong"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("set robot Robert video_url wrong"))
+        thougt_police.main(["remove", "robot", "Robert"])
+        assert_equal(
+            list(zmq_socket.mock_calls)[-1],
+            mock.call().socket().send("remove robot Robert"))
+
+    @mock.patch('zmq.Context', autospec=True)
+    @mock.patch('zmq.Socket', autospec=True)
+    def test_7(self, zmq_context, zmq_socket):
+        assert_raises(
+            SystemExit,
+            thougt_police.main,
+            ["set", "robot", "Louis", "number", "XIV"])

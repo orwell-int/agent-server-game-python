@@ -21,6 +21,40 @@ class SingleCommand(RegisteredCommand):
         self.app.send(self._command_name + ' ' + parsed_args.object[0])
 
 
+class Set(SingleCommand):
+    "Set the property of an object."
+
+    log = logging.getLogger(__name__)
+
+    def get_parser(self, prog_name):
+        parser = super(Set, self).get_parser(prog_name)
+        parser.add_argument(
+            'name')
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        parser.add_argument(
+            'value')
+        return parser
+
+    def take_action(self, parsed_args):
+        self.app.send(
+            ' '.join((
+                self._command_name,
+                parsed_args.name,
+                parsed_args.property,
+                parsed_args.value)))
+
+
+class SetRobot(Set):
+    "Set the property of a robot."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'set robot'
+    _properties = ['video_url', ]
+
+
 class List(SingleCommand):
     "List something."
 
@@ -136,6 +170,34 @@ class Stop(SingleCommand):
         return parser
 
 
+class RegisterRobot(SingleCommand):
+    "Register a robot"
+
+    log = logging.getLogger(__name__)
+    _command_name = 'register robot'
+
+    def get_parser(self, prog_name):
+        parser = super(RegisterRobot, self).get_parser(prog_name)
+        parser.add_argument(
+            'object',
+            nargs=1)
+        return parser
+
+
+class UnregisterRobot(SingleCommand):
+    "Unregister a robot"
+
+    log = logging.getLogger(__name__)
+    _command_name = 'unregister robot'
+
+    def get_parser(self, prog_name):
+        parser = super(UnregisterRobot, self).get_parser(prog_name)
+        parser.add_argument(
+            'object',
+            nargs=1)
+        return parser
+
+
 class AgentApp(App):
 
     log = logging.getLogger(__name__)
@@ -155,6 +217,9 @@ class AgentApp(App):
         AddRobot.register_to(command)
         RemovePlayer.register_to(command)
         RemoveRobot.register_to(command)
+        RegisterRobot.register_to(command)
+        UnregisterRobot.register_to(command)
+        SetRobot.register_to(command)
         self._zmq_context = None
         self._zmq_publish_socket = None
         self._zmq_pull_socket = None
@@ -189,7 +254,7 @@ class AgentApp(App):
         return parser
 
     def initialize_app(self, argv):
-        self.log.debug('initialize_app')
+        self.log.debug('initialize_app ; argv = ' + str(argv))
         import zmq
         self._zmq_context = zmq.Context()
         self.log.debug('created context = %s' % self._zmq_context)
@@ -205,8 +270,9 @@ class AgentApp(App):
         self._zmq_pull_socket.setsockopt(zmq.LINGER, 1)
         self._zmq_pull_socket.bind("tcp://0.0.0.0:%i" % self.options.listen)
         List.port = str(self.options.listen)
+        # if we do not wait the first messages are lost
         import time
-        time.sleep(0.001)
+        time.sleep(0.6)
 
     def send(self, command):
         self.log.debug('send command "%s"' % command)
