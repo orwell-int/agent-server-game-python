@@ -18,7 +18,8 @@ class RegisteredCommand(Command):
 
 class SingleCommand(RegisteredCommand):
     def take_action(self, parsed_args):
-        self.app.send(self._command_name + ' ' + parsed_args.object[0])
+        self.app.sendAndReceive(
+            self._command_name + ' ' + parsed_args.object[0])
 
 
 class Set(SingleCommand):
@@ -38,7 +39,7 @@ class Set(SingleCommand):
         return parser
 
     def take_action(self, parsed_args):
-        self.app.send(
+        self.app.sendAndReceive(
             ' '.join((
                 self._command_name,
                 parsed_args.name,
@@ -63,12 +64,7 @@ class List(SingleCommand):
     host = socket.gethostbyname(socket.getfqdn())
 
     def take_action(self, parsed_args):
-        self.app.send(
-            ' '.join((
-                self._command_name,
-                List.host,
-                List.port)))
-        message = self.app.receive()
+        message = self.app.sendAndReceive(self._command_name)
         self.log.info(message)
 
 
@@ -221,8 +217,7 @@ class AgentApp(App):
         UnregisterRobot.register_to(command)
         SetRobot.register_to(command)
         self._zmq_context = None
-        self._zmq_publish_socket = None
-        self._zmq_pull_socket = None
+        self._zmq_request_socket = None
 
     def build_option_parser(
             self,
@@ -258,32 +253,31 @@ class AgentApp(App):
         import zmq
         self._zmq_context = zmq.Context()
         self.log.debug('created context = %s' % self._zmq_context)
-        self._zmq_publish_socket = self._zmq_context.socket(zmq.PUB)
+        self._zmq_request_socket = self._zmq_context.socket(zmq.REQ)
         self.log.debug(
-            'created publish socket = %s' % self._zmq_publish_socket)
-        self._zmq_publish_socket.setsockopt(zmq.LINGER, 1)
-        self._zmq_publish_socket.connect("tcp://%s:%i" % (
+            'created request socket = %s' % self._zmq_request_socket)
+        self._zmq_request_socket.setsockopt(zmq.LINGER, 1)
+        self._zmq_request_socket.connect("tcp://%s:%i" % (
             self.options.address,
             self.options.port))
-        self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
-        self.log.debug('created pull socket = %s' % self._zmq_pull_socket)
-        self._zmq_pull_socket.setsockopt(zmq.LINGER, 1)
-        self._zmq_pull_socket.bind("tcp://0.0.0.0:%i" % self.options.listen)
         List.port = str(self.options.listen)
         # if we do not wait the first messages are lost
         import time
         time.sleep(0.6)
 
-    def send(self, command):
+    def sendAndReceive(self, command):
         self.log.debug('send command "%s"' % command)
         self.log.debug('call socket.send("%s")' % command)
-        self._zmq_publish_socket.send(command)
-
-    def receive(self):
-        self.log.debug('try to receive a message')
-        message = self._zmq_pull_socket.recv()
+        self._zmq_request_socket.send(command)
+        message = self._zmq_request_socket.recv()
         self.log.debug('received: %s', message)
         return message
+
+    #def receive(self):
+        #self.log.debug('try to receive a message')
+        #message = self._zmq_request_socket.recv()
+        #self.log.debug('received: %s', message)
+        #return message
 
     def prepare_to_run_command(self, cmd):
         self.log.debug('prepare_to_run_command %s', cmd.__class__.__name__)
