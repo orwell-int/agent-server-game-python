@@ -10,6 +10,10 @@ import zmq
 
 
 class MainTest(unittest.TestCase):
+    def _clean(self, array):
+        # it seems that calling the tests add a few unwanted calls to the stack
+        return [x for x in array if not str(x).endswith('.__str__()')]
+
     def test_1(self):
         # without this empty command the program hangs waiting for input
         thougt_police.main([""])
@@ -18,42 +22,38 @@ class MainTest(unittest.TestCase):
     @mock.patch('zmq.Socket', autospec=True)
     def test_2(self, zmq_context, zmq_socket):
         thougt_police.main(["stop", "application"])
-        found = list(zmq_socket.mock_calls)
+        found = self._clean(list(zmq_socket.mock_calls))
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(found)
         assert_equal(found[0], mock.call())
-        # this does not work
-        #assert_equal(found[1], mock.call().__str__())
-        assert_equal(found[2], mock.call().socket(zmq.REQ))
-        assert_equal(found[4], mock.call().socket().setsockopt(zmq.LINGER, 1))
+        assert_equal(found[1], mock.call().socket(zmq.REQ))
+        assert_equal(found[2], mock.call().socket().setsockopt(zmq.LINGER, 1))
         assert_equal(
-            found[5],
+            found[3],
             mock.call().socket().connect('tcp://127.0.0.1:9003'))
         assert_equal(
-            found[6],
+            found[4],
             mock.call().socket().send('stop application'))
         assert_equal(
-            found[7],
+            found[5],
             mock.call().socket().recv())
 
     @mock.patch('zmq.Context', autospec=True)
     @mock.patch('zmq.Socket', autospec=True)
     def test_2_bis(self, zmq_context, zmq_socket):
         thougt_police.main(
-            ["-p", "12", "-a", "127.0.0.1", "-l", "42", "stop", "application"])
-        found = list(zmq_socket.mock_calls)
+            ["-p", "12", "-a", "127.0.0.1", "stop", "application"])
+        found = self._clean(list(zmq_socket.mock_calls))
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(found)
         assert_equal(found[0], mock.call())
-        # this does not work
-        #assert_equal(found[1], mock.call().__str__())
-        assert_equal(found[2], mock.call().socket(zmq.REQ))
-        assert_equal(found[4], mock.call().socket().setsockopt(zmq.LINGER, 1))
+        assert_equal(found[1], mock.call().socket(zmq.REQ))
+        assert_equal(found[2], mock.call().socket().setsockopt(zmq.LINGER, 1))
         assert_equal(
-            found[5],
+            found[3],
             mock.call().socket().connect('tcp://127.0.0.1:12'))
         assert_equal(
-            found[6],
+            found[4],
             mock.call().socket().send('stop application'))
 
     @mock.patch('zmq.Context', autospec=True)
@@ -65,11 +65,11 @@ class MainTest(unittest.TestCase):
     @mock.patch('zmq.Socket', autospec=True)
     def test_4(self, zmq_context, zmq_socket):
         thougt_police.main(["stop", "game"])
-        found = list(zmq_socket.mock_calls)
+        found = self._clean(list(zmq_socket.mock_calls))
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(found)
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            found[-2],
             mock.call().socket().send("stop game"))
 
     @mock.patch('zmq.Context', autospec=True)
@@ -81,23 +81,23 @@ class MainTest(unittest.TestCase):
         effect of the mock).
         '''
         thougt_police.main(["list", "robot"])
-        found = list(zmq_socket.mock_calls)
+        found = self._clean(list(zmq_socket.mock_calls))
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(found)
         assert_equal(
-            list(zmq_socket.mock_calls)[-10],
+            found[-2],
             mock.call().socket().send("list robot"))
         assert_equal(
-            list(zmq_socket.mock_calls)[-9],
+            found[-1],
             mock.call().socket().recv())
         thougt_police.main(["list", "player"])
-        found = list(zmq_socket.mock_calls)
+        found = self._clean(list(zmq_socket.mock_calls))
         pp.pprint(found)
         assert_equal(
-            list(zmq_socket.mock_calls)[-11],
+            found[-2],
             mock.call().socket().send("list player"))
         assert_equal(
-            list(zmq_socket.mock_calls)[-10],
+            found[-1],
             mock.call().socket().recv())
 
     @mock.patch('zmq.Context', autospec=True)
@@ -105,32 +105,36 @@ class MainTest(unittest.TestCase):
     def test_6(self, zmq_context, zmq_socket):
         thougt_police.main(["add", "player", "toto"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("add player toto"))
         thougt_police.main(["remove", "player", "toto"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("remove player toto"))
         thougt_police.main(["add", "robot", "Robert"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("add robot Robert"))
+        thougt_police.main(["remove", "robot", "Robert"])
+        assert_equal(
+            self._clean(list(zmq_socket.mock_calls))[-2],
+            mock.call().socket().send("remove robot Robert"))
         thougt_police.main(["register", "robot", "Robert"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("register robot Robert"))
         thougt_police.main(["unregister", "robot", "Robert"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("unregister robot Robert"))
         thougt_police.main(
             ["set", "robot", "Robert", "video_url", "wrong"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("set robot Robert video_url wrong"))
         thougt_police.main(["remove", "robot", "Robert"])
         assert_equal(
-            list(zmq_socket.mock_calls)[-3],
+            self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("remove robot Robert"))
 
     @mock.patch('zmq.Context', autospec=True)
