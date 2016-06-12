@@ -69,6 +69,67 @@ class SetRobot(Set):
     _properties = ['video_url', ]
 
 
+class Get(SingleCommand):
+
+    """Get the property of an object."""
+
+    log = logging.getLogger(__name__)
+
+    def get_parser(self, prog_name):
+        """Override the parser to add custom arguments."""
+        parser = super(Get, self).get_parser(prog_name)
+        parser.add_argument(
+            'name')
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        return parser
+
+    def take_action(self, parsed_args):
+        """Send the command and display the reply."""
+        message = self.app.send_and_receive(
+            ' '.join((
+                self._command_name,
+                parsed_args.name,
+                parsed_args.property)))
+        self.log.info(message)
+
+
+class GetRobot(Get):
+    "Get the property of a robot."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'get robot'
+    _properties = ['video_url', ]
+
+
+class GetGame(SingleCommand):
+
+    """Get the property of the game."""
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'get game'
+    _properties = ['time', ]
+
+    def get_parser(self, prog_name):
+        """Override the parser to add custom arguments."""
+        parser = super(GetGame, self).get_parser(prog_name)
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        return parser
+
+    def take_action(self, parsed_args):
+        """Send the command and display the reply."""
+        message = self.app.send_and_receive(
+            ' '.join((
+                self._command_name,
+                parsed_args.property)))
+        self.log.info(message)
+
+
 class List(SingleCommand):
 
     """List something."""
@@ -256,6 +317,8 @@ class AgentApp(App):
         RegisterRobot.register_to(command_manager)
         UnregisterRobot.register_to(command_manager)
         SetRobot.register_to(command_manager)
+        GetRobot.register_to(command_manager)
+        GetGame.register_to(command_manager)
         self._zmq_context = None
         self._zmq_req_socket = None
 
