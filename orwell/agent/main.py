@@ -32,6 +32,40 @@ class SingleCommand(RegisteredCommand):
         self.log.debug('discard reply: ' + str(reply))
 
 
+class SetAnonymous(SingleCommand):
+
+    """Set the property of an object."""
+
+    log = logging.getLogger(__name__)
+
+    def get_parser(self, prog_name):
+        """Override the parser to add custom arguments."""
+        parser = super(SetAnonymous, self).get_parser(prog_name)
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        parser.add_argument(
+            'value')
+        return parser
+
+    def take_action(self, parsed_args):
+        """Send the command and ignore the reply."""
+        self.app.send_and_receive(
+            ' '.join((
+                self._command_name,
+                parsed_args.property,
+                parsed_args.value)))
+
+
+class SetGame(SetAnonymous):
+    "Set the property of the game."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'set game'
+    _properties = ['duration', ]
+
+
 class Set(SingleCommand):
 
     """Set the property of an object."""
@@ -111,7 +145,7 @@ class GetGame(SingleCommand):
     log = logging.getLogger(__name__)
 
     _command_name = 'get game'
-    _properties = ['time', ]
+    _properties = ['time', 'duration', ]
 
     def get_parser(self, prog_name):
         """Override the parser to add custom arguments."""
@@ -316,6 +350,7 @@ class AgentApp(App):
         RemoveRobot.register_to(command_manager)
         RegisterRobot.register_to(command_manager)
         UnregisterRobot.register_to(command_manager)
+        SetGame.register_to(command_manager)
         SetRobot.register_to(command_manager)
         GetRobot.register_to(command_manager)
         GetGame.register_to(command_manager)

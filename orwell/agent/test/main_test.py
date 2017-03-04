@@ -136,6 +136,14 @@ class MainTest(unittest.TestCase):
         assert_equal(
             self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("remove robot Robert"))
+        thougt_police.main(["set", "game", "duration", "5"])
+        assert_equal(
+            self._clean(list(zmq_socket.mock_calls))[-2],
+            mock.call().socket().send("set game duration 5"))
+        thougt_police.main(["get", "game", "duration"])
+        assert_equal(
+            self._clean(list(zmq_socket.mock_calls))[-2],
+            mock.call().socket().send("get game duration"))
 
     @mock.patch('zmq.Context', autospec=True)
     @mock.patch('zmq.Socket', autospec=True)
