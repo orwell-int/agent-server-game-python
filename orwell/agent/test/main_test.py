@@ -144,6 +144,21 @@ class MainTest(unittest.TestCase):
         assert_equal(
             self._clean(list(zmq_socket.mock_calls))[-2],
             mock.call().socket().send("get game duration"))
+        thougt_police.main(
+            ["add", "team", "TEAM"])
+        assert_equal(
+            self._clean(list(zmq_socket.mock_calls))[-2],
+            mock.call().socket().send("add team TEAM"))
+        thougt_police.main(
+            ["remove", "team", "TEAM"])
+        assert_equal(
+            self._clean(list(zmq_socket.mock_calls))[-2],
+            mock.call().socket().send("remove team TEAM"))
+        thougt_police.main(
+            ["set", "team", "TEAM", "score", "2"])
+        assert_equal(
+            self._clean(list(zmq_socket.mock_calls))[-2],
+            mock.call().socket().send("set team TEAM score 2"))
 
     @mock.patch('zmq.Context', autospec=True)
     @mock.patch('zmq.Socket', autospec=True)

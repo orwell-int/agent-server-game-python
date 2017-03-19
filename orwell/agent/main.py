@@ -103,6 +103,15 @@ class SetRobot(Set):
     _properties = ['video_url', ]
 
 
+class SetTeam(Set):
+    "Set the property of a team."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'set team'
+    _properties = ['score', ]
+
+
 class Get(SingleCommand):
 
     """Get the property of an object."""
@@ -225,6 +234,14 @@ class AddRobot(Add):
     _command_name = 'add robot'
 
 
+class AddTeam(Add):
+
+    """Add a team."""
+
+    log = logging.getLogger(__name__)
+    _command_name = 'add team'
+
+
 class Remove(SingleCommand):
 
     """Remove something."""
@@ -254,6 +271,14 @@ class RemoveRobot(Remove):
 
     log = logging.getLogger(__name__)
     _command_name = 'remove robot'
+
+
+class RemoveTeam(Remove):
+
+    """Remove a team."""
+
+    log = logging.getLogger(__name__)
+    _command_name = 'remove team'
 
 
 class Start(SingleCommand):
@@ -346,12 +371,15 @@ class AgentApp(App):
         ListRobot.register_to(command_manager)
         AddPlayer.register_to(command_manager)
         AddRobot.register_to(command_manager)
+        AddTeam.register_to(command_manager)
         RemovePlayer.register_to(command_manager)
         RemoveRobot.register_to(command_manager)
+        RemoveTeam.register_to(command_manager)
         RegisterRobot.register_to(command_manager)
         UnregisterRobot.register_to(command_manager)
         SetGame.register_to(command_manager)
         SetRobot.register_to(command_manager)
+        SetTeam.register_to(command_manager)
         GetRobot.register_to(command_manager)
         GetGame.register_to(command_manager)
         self._zmq_context = None
