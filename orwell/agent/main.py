@@ -32,6 +32,40 @@ class SingleCommand(RegisteredCommand):
         self.log.debug('discard reply: ' + str(reply))
 
 
+class SetAnonymous(SingleCommand):
+
+    """Set the property of an object."""
+
+    log = logging.getLogger(__name__)
+
+    def get_parser(self, prog_name):
+        """Override the parser to add custom arguments."""
+        parser = super(SetAnonymous, self).get_parser(prog_name)
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        parser.add_argument(
+            'value')
+        return parser
+
+    def take_action(self, parsed_args):
+        """Send the command and ignore the reply."""
+        self.app.send_and_receive(
+            ' '.join((
+                self._command_name,
+                parsed_args.property,
+                parsed_args.value)))
+
+
+class SetGame(SetAnonymous):
+    "Set the property of the game."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'set game'
+    _properties = ['duration', ]
+
+
 class Set(SingleCommand):
 
     """Set the property of an object."""
@@ -67,6 +101,76 @@ class SetRobot(Set):
 
     _command_name = 'set robot'
     _properties = ['video_url', ]
+
+
+class SetTeam(Set):
+    "Set the property of a team."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'set team'
+    _properties = ['score', ]
+
+
+class Get(SingleCommand):
+
+    """Get the property of an object."""
+
+    log = logging.getLogger(__name__)
+
+    def get_parser(self, prog_name):
+        """Override the parser to add custom arguments."""
+        parser = super(Get, self).get_parser(prog_name)
+        parser.add_argument(
+            'name')
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        return parser
+
+    def take_action(self, parsed_args):
+        """Send the command and display the reply."""
+        message = self.app.send_and_receive(
+            ' '.join((
+                self._command_name,
+                parsed_args.name,
+                parsed_args.property)))
+        self.log.info(message)
+
+
+class GetRobot(Get):
+    "Get the property of a robot."
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'get robot'
+    _properties = ['video_url', ]
+
+
+class GetGame(SingleCommand):
+
+    """Get the property of the game."""
+
+    log = logging.getLogger(__name__)
+
+    _command_name = 'get game'
+    _properties = ['time', 'duration', ]
+
+    def get_parser(self, prog_name):
+        """Override the parser to add custom arguments."""
+        parser = super(GetGame, self).get_parser(prog_name)
+        parser.add_argument(
+            'property',
+            choices=self._properties)
+        return parser
+
+    def take_action(self, parsed_args):
+        """Send the command and display the reply."""
+        message = self.app.send_and_receive(
+            ' '.join((
+                self._command_name,
+                parsed_args.property)))
+        self.log.info(message)
 
 
 class List(SingleCommand):
@@ -130,6 +234,14 @@ class AddRobot(Add):
     _command_name = 'add robot'
 
 
+class AddTeam(Add):
+
+    """Add a team."""
+
+    log = logging.getLogger(__name__)
+    _command_name = 'add team'
+
+
 class Remove(SingleCommand):
 
     """Remove something."""
@@ -159,6 +271,14 @@ class RemoveRobot(Remove):
 
     log = logging.getLogger(__name__)
     _command_name = 'remove robot'
+
+
+class RemoveTeam(Remove):
+
+    """Remove a team."""
+
+    log = logging.getLogger(__name__)
+    _command_name = 'remove team'
 
 
 class Start(SingleCommand):
@@ -251,11 +371,17 @@ class AgentApp(App):
         ListRobot.register_to(command_manager)
         AddPlayer.register_to(command_manager)
         AddRobot.register_to(command_manager)
+        AddTeam.register_to(command_manager)
         RemovePlayer.register_to(command_manager)
         RemoveRobot.register_to(command_manager)
+        RemoveTeam.register_to(command_manager)
         RegisterRobot.register_to(command_manager)
         UnregisterRobot.register_to(command_manager)
+        SetGame.register_to(command_manager)
         SetRobot.register_to(command_manager)
+        SetTeam.register_to(command_manager)
+        GetRobot.register_to(command_manager)
+        GetGame.register_to(command_manager)
         self._zmq_context = None
         self._zmq_req_socket = None
 
