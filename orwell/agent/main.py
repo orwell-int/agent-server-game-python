@@ -431,10 +431,10 @@ class AgentApp(App):
         """Send a command and block until the response is received."""
         self.log.debug('send command "%s"' % command)
         self.log.debug('call socket.send("%s")' % command)
-        send_result = self._zmq_req_socket.send(command)
+        send_result = self._zmq_req_socket.send_string(command)
         self.log.debug('send -> ' + str(send_result))
         self.log.debug('try to receive a message')
-        message = self._zmq_req_socket.recv()
+        message = self._zmq_req_socket.recv_string()
         self.log.debug('received: %s', message)
         return message
 
@@ -455,5 +455,5 @@ def main(argv=sys.argv[1:]):
     return myapp.run(argv)
 
 
-if ("__main__" == __name__):
+if "__main__" == __name__:
     sys.exit(main(sys.argv[1:]))  # pragma: no coverage
