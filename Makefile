@@ -1,5 +1,5 @@
 env/bin/activate:
-	virtualenv env
+	python3 -m venv env
 	. env/bin/activate && pip install -r requirements.txt && pip install -e .
 
 develop: env/bin/activate

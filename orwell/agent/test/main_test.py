@@ -14,9 +14,18 @@ class MainTest(unittest.TestCase):
         # it seems that calling the tests add a few unwanted calls to the stack
         return [x for x in array if not str(x).endswith('.__str__()')]
 
-    def test_1(self):
+    @mock.patch('zmq.Context', autospec=True)
+    @mock.patch('zmq.Socket', autospec=True)
+    def test_1(self, zmq_context, zmq_socket):
         # without this empty command the program hangs waiting for input
         thougt_police.main([""])
+        found = self._clean(list(zmq_socket.mock_calls))
+        assert_equal(found[0], mock.call())
+        assert_equal(found[1], mock.call().socket(zmq.REQ))
+        assert_equal(found[2], mock.call().socket().setsockopt(zmq.LINGER, 1))
+        assert_equal(
+            found[3],
+            mock.call().socket().connect('tcp://127.0.0.1:9003'))
 
     @mock.patch('zmq.Context', autospec=True)
     @mock.patch('zmq.Socket', autospec=True)

@@ -422,6 +422,7 @@ class AgentApp(App):
         self.log.debug('created push socket | %s' % connection_string)
         self._zmq_req_socket.setsockopt(zmq.LINGER, 1)
         self._zmq_req_socket.connect(connection_string)
+        self.log.debug('after push socket connect')
         # # if we do not wait the first messages are lost
         # import time
         # time.sleep(0.0001)
