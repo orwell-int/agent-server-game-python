@@ -7,6 +7,10 @@ import socket
 from cliff.app import App
 from cliff.command import Command
 from cliff.commandmanager import CommandManager
+import cliff.interactive
+import cmd2
+
+import zmq
 
 
 class RegisteredCommand(Command):
@@ -27,8 +31,14 @@ class SingleCommand(RegisteredCommand):
 
     def take_action(self, parsed_args):
         """Send the command and ignore the reply."""
+        things = []
+        for thing in parsed_args.object:
+            if ' ' in thing:
+                thing = '"%s"' % thing
+            things.append(thing)
+        joined = ' '.join(things)
         reply = self.app.send_and_receive(
-            self._command_name + ' ' + parsed_args.object[0])
+            self._command_name + ' %s' % joined)
         self.log.debug('discard reply: ' + str(reply))
 
 
@@ -86,10 +96,14 @@ class Set(SingleCommand):
 
     def take_action(self, parsed_args):
         """Send the command and ignore the reply."""
+        if ' ' in parsed_args.name:
+            name = '"%s"' % parsed_args.name
+        else:
+            name = parsed_args.name
         self.app.send_and_receive(
             ' '.join((
                 self._command_name,
-                parsed_args.name,
+                name,
                 parsed_args.property,
                 parsed_args.value)))
 
@@ -130,12 +144,18 @@ class Get(SingleCommand):
 
     def take_action(self, parsed_args):
         """Send the command and display the reply."""
+        if ' ' in parsed_args.name:
+            name = '"%s"' % parsed_args.name
+        else:
+            name = parsed_args.name
         message = self.app.send_and_receive(
             ' '.join((
                 self._command_name,
-                parsed_args.name,
+                name,
                 parsed_args.property)))
-        self.log.info(message)
+        # it is not nice but this test prevent printing the mocks in tests
+        if isinstance(message, str):
+            self.log.info(message)
 
 
 class GetRobot(Get):
@@ -170,7 +190,9 @@ class GetGame(SingleCommand):
             ' '.join((
                 self._command_name,
                 parsed_args.property)))
-        self.log.info(message)
+        # it is not nice but this test prevent printing the mocks in tests
+        if isinstance(message, str):
+            self.log.info(message)
 
 
 class List(SingleCommand):
@@ -184,7 +206,9 @@ class List(SingleCommand):
     def take_action(self, parsed_args):
         """Send the list command."""
         message = self.app.send_and_receive(self._command_name)
-        self.log.info(message)
+        # it is not nice but this test prevent printing the mocks in tests
+        if isinstance(message, str):
+            self.log.info(message)
 
 
 class ListPlayer(List):
@@ -201,6 +225,22 @@ class ListRobot(List):
 
     log = logging.getLogger(__name__)
     _command_name = 'list robot'
+
+
+class ListTeam(List):
+
+    """List all teams."""
+
+    log = logging.getLogger(__name__)
+    _command_name = 'list team'
+
+
+class ListFlag(List):
+
+    """List all flags."""
+
+    log = logging.getLogger(__name__)
+    _command_name = 'list flag'
 
 
 class Add(SingleCommand):
@@ -347,6 +387,22 @@ class UnregisterRobot(SingleCommand):
         return parser
 
 
+class InteractiveApp(cliff.interactive.InteractiveApp):
+    def __init__(self, *args, **kwargs):
+        super(InteractiveApp, self).__init__(*args, **kwargs)
+
+    def default(self, line):
+        # try to replace the "wrong" behaviour of cliff::InteractiveApp::default
+        line_parts = self._split_line(line)
+        if isinstance(line, cmd2.Statement):
+            line_parts = [line_parts[0]] + line.arg_list
+        ret = self.parent_app.run_subcommand(line_parts)
+        if self.errexit:
+            # Only provide this if errexit is enabled,
+            # otherise keep old behaviour
+            return ret
+
+
 class AgentApp(App):
 
     """Click application.
@@ -364,11 +420,14 @@ class AgentApp(App):
             description='Orwell agent.',
             version='0.0.1',
             command_manager=command_manager,
+            interactive_app_factory=InteractiveApp,
             )
         Start.register_to(command_manager)
         Stop.register_to(command_manager)
         ListPlayer.register_to(command_manager)
         ListRobot.register_to(command_manager)
+        ListTeam.register_to(command_manager)
+        ListFlag.register_to(command_manager)
         AddPlayer.register_to(command_manager)
         AddRobot.register_to(command_manager)
         AddTeam.register_to(command_manager)
@@ -412,7 +471,6 @@ class AgentApp(App):
     def initialize_app(self, argv):
         """Create the zmq objects."""
         self.log.debug('initialize_app ; argv = ' + str(argv))
-        import zmq
         self._zmq_context = zmq.Context()
         self.log.debug('created context = %s' % self._zmq_context)
         self._zmq_req_socket = self._zmq_context.socket(zmq.REQ)
